@@ -107,7 +107,7 @@ Reservation Object:
   "id": 2969413,
   "room_id": 3,
   "guest_id": 49,
-  "start_date": "04 Jul 2020",
+  "start_date": "2020-07-04",
   "duration": 3,
   "adults": 4,
   "children": 2,
@@ -153,7 +153,7 @@ Rental Date Object:
 ```json
 {
   "room_id": 2969413,
-  "date": "04 JUL 2020",
+  "date": "2021-07-04",
   "is_rented": true,
   "check_in": true,
   "check_out": true,
@@ -164,9 +164,9 @@ Rental Date Object:
 Intention | Request Type | Request URL | Sample Request Body | Sample Resonse Body | Responese codes
 ------------ | ------------ | ------------ | ------------ | ------------ | --- 
 Get rental date information for the next 93 days | GET | /api/rooms/:room_id/dates/ | NA | `{"Dates": [{Rental Date Object}, {Rental Date Object}, ...]}` | 200/400
-Add an available rental date | POST | /api/rooms/:room_id/dates | `{date: '04-JUL-2021', price: 125}` | NA | 201/403
-Add a range of available rental dates | POST | /api/rooms/:room_id/dates | `{startDate: '05-JUL-2021', endDate: '11-JUL-2021', price: 130}` | NA | 201/403
-Edit a date or range of dates for rental | PATCH | /api/rooms/:room_id/dates/ | `[{"op": "replace", "path": "/09-JUL-2021/price", "value": 120}, {"op": "replace", "path": "/09-JUL-2021/check_in", "value": false}, {"op": "replace", "path": "/10-JUL-2021/price", "value": 120}]` | NA | 200/403
+Add an available rental date | POST | /api/rooms/:room_id/dates | `{date: '2021-07-04', price: 125}` | NA | 201/403
+Add a range of available rental dates | POST | /api/rooms/:room_id/dates | `{startDate: '2021-07-05', endDate: '2021-07-11', price: 130}` | NA | 201/403
+Edit a date or range of dates for rental | PATCH | /api/rooms/:room_id/dates/ | `[{"op": "replace", "path": "/2021-07-09/price", "value": 120}, {"op": "replace", "path": "/2021-07-09/check_in", "value": false}, {"op": "replace", "path": "/2021-07-10/price", "value": 120}]` | NA | 200/403
 Remove a rental date | DELETE | /api/rooms/:room_id/dates/:date | NA | NA | 204/403
 
 
