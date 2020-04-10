@@ -1,3 +1,5 @@
+const fs = require('fs');
+const stringify = require('csv-stringify');
 const faker = require('faker');
 
 // generate a random integer [min, max)
@@ -163,42 +165,148 @@ const generateReview = (id, room_id, guest_id) => {
   };
 };
 
+const fileNameGenerator = (type, loopcount, dir = './.seed') => {
+  return `${dir}/${type}${loopcount}.csv`;
+};
+
 const dataGenerator = (primaryRecordCount) => {
+  // keep start time in memory for time reporting
   const startTime = new Date();
-  var roomID = 1;
-  const loopSize = 10000;
-  var loops = 1;
-  var userID =1;
-  var imageID = 1;
-  var reviewID = 1;
+  // modify the relative file size of each file write
+  const loopSize = 100;
+  // generate an array of the next 93 dates
   const dateArray = generateDateArray();
+  // start IDs for identified objects at 1
+  let loops = 1;
+  let userID = 1;
+  let roomID = 1;
+  let imageID = 1;
+  let reviewID = 1;
+  
+  // configure columns for csv-stringify
+  const userColumns = {
+    columns: [
+      {key: 'id'},
+      {key: 'username'},
+      {key: 'is_super_host'},
+      {key: 'profile_image_url'}
+    ]    
+  };
 
-  //TEST CSV
-  var csv = [];
+  const roomColumns = {
+    columns: [
+      {key: 'id'},
+      {key: 'host_id'},
+      {key: 'room_name'},
+      {key: 'description'},
+      {key: 'type_of_place'},
+      {key: 'city'},
+    ]    
+  };
+  
+  const imageColumns = {
+    columns: [
+      {key: 'id'},
+      {key: 'room_id'},
+      {key: 'url'},
+      {key: 'comment'},
+      {key: 'yolk_verified'}
+    ]    
+  };
 
-  for (; roomID < primaryRecordCount; ) {
+  const reservationRulesColumns = {
+    columns: [
+      {key: 'room_id'},
+      {key: 'guest_limit'},
+      {key: 'base_price'}
+    ]    
+  };
+
+  const dateColumns = {
+    columns: [
+      {key: 'room_id'},
+      {key: 'date'},
+      {key: 'is_rented'},
+      {key: 'check_in'},
+      {key: 'check_out'},
+      {key: 'price'}
+    ]    
+  };
+
+  const reviewColumns = {
+    columns: [
+      {key: 'id'},
+      {key: 'room_id'},
+      {key: 'guest_id'},
+      {key: 'rating'},
+      {key: 'comment'},
+      {key: 'host_reply'}
+    ]    
+  };
+
+  // generate at least as many rooms as requested
+  while (roomID < primaryRecordCount) {
+    
+    // open file streams
+    const writeUsersStream = fs.createWriteStream(fileNameGenerator('users', loops));
+    const writeRoomsStream = fs.createWriteStream(fileNameGenerator('rooms', loops));
+    const writeImagesStream = fs.createWriteStream(fileNameGenerator('images', loops));
+    const writeRulesStream = fs.createWriteStream(fileNameGenerator('rules', loops));
+    const writeDatesStream = fs.createWriteStream(fileNameGenerator('dates', loops));
+
+    // generate exactly as many users per loop as the loop size
     for (let i = 0; i < loopSize; i += 1) {
-      const user = generateUser(userID);
-      if (Boolean(userID %2 === 0)) {
+      // write user to csv
+      stringify([generateUser(userID)], userColumns, (err, data) => {
+        if (err) {
+          return console.log(err);
+        }
+        writeUsersStream.write(data);
+      });
+
+      // randomly determine if a user is a host
+      if (Boolean(randomInt(2) === 0)) {
+        // and if so, assign them a random number of rooms
         const roomsHosted = randomInt(9, 1);
         for (let j = 0; j < roomsHosted; j += 1) {
-          const room = generateRoom(roomID, userID);
-          //write room to CSV
-          csv.push(room);
+          // write rooms to csv
+          stringify([generateRoom(roomID, userID)], roomColumns, (err, data) => {
+            if (err) {
+              return console.log(err);
+            }
+            writeRoomsStream.write(data);
+          });
+          // randomly assign Yolk.io verification status and number of images
           const yolkVerified = Boolean(randomInt(2) === 1);
           const randomImages = randomInt(5);
+          // write images to csv
           for (let k = 0; k < randomImages; k += 1) {
-            const image = generateImage(imageID, roomID, yolkVerified);
+            stringify([generateImage(imageID, roomID, yolkVerified)], imageColumns, (err, data) => {
+              if (err) {
+                return console.log(err);
+              }
+              writeImagesStream.write(data);
+            });
             imageID += 1;
-            //write image to CSV
-            csv.push(image);
           }
-          const reservationRules = generateReservationRules(roomID)
-          //write reservation rules to CSV
+          // write reservation rules to csv
+            // separately because the base_price is referenced below
+          const rules = generateReservationRules(roomID);
+          stringify([rules], reservationRulesColumns, (err, data) => {
+            if (err) {
+              return console.log(err);
+            }
+            writeRulesStream.write(data);
+          });
+          
+          // write dates to csv
           for (let k = 0; k < dateArray.length; k += 1) {
-            const date = generateDate(roomID, dateArray[k], reservationRules.base_price);
-            //write date to CSV
-            csv.push(date);
+            stringify([generateDate(roomID, dateArray[k], rules.base_price)], dateColumns, (err, data) => {
+              if (err) {
+                return console.log(err);
+              }
+              writeDatesStream.write(data);
+            });
           }
           //after all room-specific operations are done, increment roomID
           roomID += 1;
@@ -206,34 +314,51 @@ const dataGenerator = (primaryRecordCount) => {
       }
       //after all user-specific operations are done, increment userID
       userID += 1;
-      //write user to CSV
-      csv.push(user);
     }
+    
+    // close file streams
+    writeUsersStream.on('finish', () => {writeUsersStream.end()});
+    writeRoomsStream.on('finish', () => {writeRoomsStream.end()});
+    writeImagesStream.on('finish', () => {writeImagesStream.end()});
+    writeRulesStream.on('finish', () => {writeRulesStream.end()});
+    writeDatesStream.on('finish', () => {writeDatesStream.end()});
+
     console.log(`Finished primary loop ${loops}: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`)
     loops += 1;
   }
   console.log(`Primary Records Done! Finished ${loops -1} loops: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
+  
   // generate reviews
-  // create a new iterator
-  const avgReviewsPerRoom = 10;
+  // choose relative number of reviews here
+  const avgReviewsPerRoom = 2;
+  // restart loop count for file naming purposes
   loops = 1;
+
+  // generate at least (avg * rooms) reviews
   while (reviewID < roomID * avgReviewsPerRoom) {
+    // open file stream
+    const writeReviewsStream = fs.createWriteStream(fileNameGenerator('reviews', loops));
     for (let i = 0; i < loopSize; i += 1) {
-      const randomGuest = randomInt(userID + 1, 1);
       const randomRoomID = randomInt(roomID + 1, 1);
-      const roomReview = generateReview(reviewID, randomRoomID, randomGuest);
+      const randomGuest = randomInt(userID + 1, 1);
       //write review to CSV
-      csv.push(roomReview);
+      stringify([generateReview(reviewID, randomRoomID, randomGuest)], reviewColumns, (err, data) => {
+        if (err) {
+          return console.log(err);
+        }
+        writeReviewsStream.write(data);
+      });
       reviewID += 1;
     }
+    // close file stream
+    writeReviewsStream.on('finish', () => {writeReviewsStream.end()});
+
     console.log(`Finished secondary loop ${loops}: generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
     loops += 1;
   }
-  console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`)
-  return csv;
+  console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
 };
 
-dataGenerator(100000);
-// console.log(dataGenerator(10));
+dataGenerator(100);
 
 module.exports = dataGenerator;
