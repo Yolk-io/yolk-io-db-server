@@ -64,13 +64,12 @@ const generateImage = (id, room_id, yolk_verified) => {
   };
 };
 
-const generateReservationRules = (room_id) => {
+const generateReservationRules = (room_id, base_price) => {
   const guestLimit = randomInt(16, 1);
-  const basePrice = randomInt(300, 20);
   return {
     room_id,
     guest_limit: guestLimit,
-    base_price: basePrice,
+    base_price,
   };
 };
 
