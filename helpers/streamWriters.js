@@ -7,6 +7,7 @@ const {
   generateImage,
   generateDate,
   generateReview,
+  generateReservationRules,
 } = require('./generators');
 
 //csv-stringify configuration objects
@@ -19,7 +20,25 @@ const {
   reviewColumns,
 } = require('./tableColumns');
 
-module.exports.writeUser = (stream, userID) => {
+const writeStream = (generator, options) => {
+  return (stream) => {
+    return (...params) => {
+      stringify([generator(...params)], options, async (err, data) => {
+        if (err) {
+          return console.log(err);
+        }
+        if (!stream.write(data)) {
+          await new Promise (resolve => {
+            return stream.once('drain', resolve);
+          });
+        }
+      });
+    };
+  };
+};
+
+module.exports.writeUser = writeStream(generateUser, userColumns);
+/* module.exports.writeUser = (stream, userID) => {
   stringify([generateUser(userID)], userColumns, async (err, data) => {
     if (err) {
       return console.log(err);
@@ -30,7 +49,7 @@ module.exports.writeUser = (stream, userID) => {
       });
     }
   });
-};
+}; */
 
 module.exports.writeRoom = (stream, roomID, userID) => {
   stringify([generateRoom(roomID, userID)], roomColumns, async (err, data) => {
@@ -58,8 +77,8 @@ module.exports.writeImage = (stream, imageID, roomID, yolkVerified) => {
   });
 };
 
-module.exports.writeRule = (stream, rules) => {
-  stringify([rules], reservationRulesColumns, async (err, data) => {
+module.exports.writeRule = (stream, roomID, basePrice) => {
+  stringify([generateReservationRules(roomID, basePrice)], reservationRulesColumns, async (err, data) => {
     if (err) {
       return console.log(err);
     }
