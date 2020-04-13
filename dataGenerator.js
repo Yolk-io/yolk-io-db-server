@@ -1,30 +1,24 @@
 const fs = require('fs');
 const stringify = require('csv-stringify');
 
-//csv-stringify configuration objects
-const {
-  userColumns,
-  roomColumns,
-  imageColumns,
-  reservationRulesColumns,
-  dateColumns,
-  reviewColumns,
-} = require('./helpers/tableColumns');
-
 //randomizers
 const randomInt = require('./helpers/randomizers').randomInt;
 
 //generators
 const {
   generateDateArray,
-  generateUser,
-  generateRoom,
-  generateImage,
   generateReservationRules,
-  generateDate,
-  generateReview,
   fileNameGenerator,
 } = require('./helpers/generators');
+
+const {
+  writeUser,
+  writeRoom,
+  writeImage,
+  writeRule,
+  writeDate,
+  writeReview,
+} = require('./helpers/streamWriters');
 
 const dataGenerator = (primaryRecordCount) => {
   // keep start time in memory for time reporting
@@ -53,16 +47,7 @@ const dataGenerator = (primaryRecordCount) => {
     // generate exactly as many users per loop as the loop size
     for (let i = 0; i < loopSize; i += 1) {
       // write user to csv
-      stringify([generateUser(userID)], userColumns, async (err, data) => {
-        if (err) {
-          return console.log(err);
-        }
-        if (!writeUsersStream.write(data)) {
-          await new Promise (resolve => {
-            return writeUsersStream.once('drain', resolve);
-          });
-        }
-      });
+      writeUser(writeUsersStream, userID);
 
       // randomly determine if a user is a host
       if (Boolean(randomInt(2) === 0)) {
@@ -70,59 +55,23 @@ const dataGenerator = (primaryRecordCount) => {
         const roomsHosted = randomInt(9, 1);
         for (let j = 0; j < roomsHosted; j += 1) {
           // write rooms to csv
-          stringify([generateRoom(roomID, userID)], roomColumns, async (err, data) => {
-            if (err) {
-              return console.log(err);
-            }
-            if (!writeRoomsStream.write(data)) {
-              await new Promise (resolve => {
-                return writeRoomsStream.once('drain', resolve);
-              });
-            }
-          });
+          writeRoom(writeRoomsStream, roomID, userID);
           // randomly assign Yolk.io verification status and number of images
           const yolkVerified = Boolean(randomInt(2) === 1);
           const randomImages = randomInt(5);
           // write images to csv
           for (let k = 0; k < randomImages; k += 1) {
-            stringify([generateImage(imageID, roomID, yolkVerified)], imageColumns, async (err, data) => {
-              if (err) {
-                return console.log(err);
-              }
-              if (!writeImagesStream.write(data)) {
-                await new Promise (resolve => {
-                  return writeImagesStream.once('drain', resolve);
-                });
-              }
-            });
+            writeImage(writeImagesStream, imageID, roomID, yolkVerified);
             imageID += 1;
           }
           // write reservation rules to csv
             // separately because the base_price is referenced below
           const rules = generateReservationRules(roomID);
-          stringify([rules], reservationRulesColumns, async (err, data) => {
-            if (err) {
-              return console.log(err);
-            }
-            if (!writeRulesStream.write(data)) {
-              await new Promise (resolve => {
-                return writeRulesStream.once('drain', resolve);
-              });
-            }
-          });
+          writeRule(writeRulesStream, rules);
           
           // write dates to csv
           for (let k = 0; k < dateArray.length; k += 1) {
-            stringify([generateDate(roomID, dateArray[k], rules.base_price)], dateColumns, async (err, data) => {
-              if (err) {
-                return console.log(err);
-              }
-              if (!writeDatesStream.write(data)) {
-                await new Promise (resolve => {
-                  return writeDatesStream.once('drain', resolve);
-                });
-              }
-            });
+            writeDate(writeDatesStream, roomID, dateArray[k], rules.base_price);
           }
           //after all room-specific operations are done, increment roomID
           roomID += 1;
@@ -133,13 +82,13 @@ const dataGenerator = (primaryRecordCount) => {
     }
     
     // close file streams
-
-    
+    /* 
     writeUsersStream.end();
     writeRoomsStream.end();
     writeImagesStream.end();
     writeRulesStream.end();
     writeDatesStream.end();
+     */
 
     
 
@@ -162,20 +111,11 @@ const dataGenerator = (primaryRecordCount) => {
       const randomRoomID = randomInt(roomID + 1, 1);
       const randomGuest = randomInt(userID + 1, 1);
       //write review to CSV
-      stringify([generateReview(reviewID, randomRoomID, randomGuest)], reviewColumns, async (err, data) => {
-        if (err) {
-          return console.log(err);
-        }
-        if (!writeReviewsStream.write(data)) {
-          await new Promise (resolve => {
-            return writeReviewsStream.once('drain', resolve);
-          });
-        }
-      });
+      writeReview(writeReviewsStream, reviewID, randomRoomID, randomGuest);
       reviewID += 1;
     }
     // close file stream
-    writeReviewsStream.end();
+    // writeReviewsStream.end();
 
     console.log(`Finished secondary loop ${loops}: generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
     loops += 1;
@@ -183,6 +123,6 @@ const dataGenerator = (primaryRecordCount) => {
   console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
 };
 
-dataGenerator(1000);
+dataGenerator(100);
 
 module.exports = dataGenerator;
