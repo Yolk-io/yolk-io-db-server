@@ -1,21 +1,22 @@
-//randomizers
-const randomInt = require('./helpers/randomizers').randomInt;
-
 //generators
 const {
   generateDateArray,
-  fileNameGenerator,
 } = require('./helpers/generators');
 
 const {
   saveFile,
-  writeUser,
-  writeRoom,
-  writeImage,
-  writeRule,
-  writeDate,
-  writeReview,
+  userPipeGenerator,
+  roomPipeGenerator,
+  imagePipeGenerator,
+  datePipeGenerator,
+  reviewPipeGenerator,
+  rulesPipeGenerator,
 } = require('./helpers/streamWriters');
+
+//randomizers
+const {
+  randomInt,
+} = require('./helpers/randomizers');
 
 const dataGenerator = (primaryRecordCount) => {
   const loopSize = 1;
@@ -34,14 +35,14 @@ const dataGenerator = (primaryRecordCount) => {
     
   
     const writeUsersStream = saveFile('users', loops);
-    const userStream = writeUser(writeUsersStream);
+    const writeUser = userPipeGenerator(writeUsersStream);
     /* 
     const writeRoomsStream = fs.createWriteStream(fileNameGenerator('rooms', loops));
     const writeImagesStream = fs.createWriteStream(fileNameGenerator('images', loops));
     const writeRulesStream = fs.createWriteStream(fileNameGenerator('rules', loops));
     const writeDatesStream = fs.createWriteStream(fileNameGenerator('dates', loops));
  */
-    for (let i = 0; i < loopSize; i += 1) {
+    for (let i = 0; i < loopSize; i += 1, userID += 1) {
       writeUser(userID);
 /* 
       if (Boolean(randomInt(2) === 0)) {//user is a host
@@ -68,7 +69,7 @@ const dataGenerator = (primaryRecordCount) => {
         }
       }
       */
-      userID += 1;
+      // userID += 1;
     }
     
     // writeUsersStream.end();
