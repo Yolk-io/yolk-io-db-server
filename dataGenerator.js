@@ -1,6 +1,3 @@
-const fs = require('fs');
-const stringify = require('csv-stringify');
-
 //randomizers
 const randomInt = require('./helpers/randomizers').randomInt;
 
@@ -11,6 +8,7 @@ const {
 } = require('./helpers/generators');
 
 const {
+  saveFile,
   writeUser,
   writeRoom,
   writeImage,
@@ -20,7 +18,7 @@ const {
 } = require('./helpers/streamWriters');
 
 const dataGenerator = (primaryRecordCount) => {
-  const loopSize = 10000;
+  const loopSize = 1;
   
   const startTime = new Date();
   const dateArray = generateDateArray(); //next 93 days
@@ -35,7 +33,7 @@ const dataGenerator = (primaryRecordCount) => {
   while (/* roomID */userID < primaryRecordCount) {
     
   
-    const writeUsersStream = fs.createWriteStream(fileNameGenerator('users', loops));
+    const writeUsersStream = saveFile('users', loops);
     const userStream = writeUser(writeUsersStream);
     /* 
     const writeRoomsStream = fs.createWriteStream(fileNameGenerator('rooms', loops));
@@ -44,7 +42,7 @@ const dataGenerator = (primaryRecordCount) => {
     const writeDatesStream = fs.createWriteStream(fileNameGenerator('dates', loops));
  */
     for (let i = 0; i < loopSize; i += 1) {
-      userStream(userID);
+      writeUser(userID);
 /* 
       if (Boolean(randomInt(2) === 0)) {//user is a host
         const roomsHosted = randomInt(9, 1);
@@ -115,6 +113,6 @@ const dataGenerator = (primaryRecordCount) => {
   */
 };
 
-dataGenerator(100000);
+dataGenerator(5);
 
 module.exports = dataGenerator;
