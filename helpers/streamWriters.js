@@ -32,10 +32,20 @@ const streamWriterGenerator = (generator, options) => {
     const readStream = stringify(options);
     readStream.pipe(writeStream);
     return (...params) => {
-      readStream.write(generator(...params));
+      return new Promise ((resolve, reject) => readStream.write(generator(...params), resolve));
     }
   }
 };
+
+// const streamWriterGenerator = (generator, options) => {
+//   return (writeStream) => {
+//     const readStream = stringify(options);
+//     readStream.pipe(writeStream);
+//     return (...params) => {
+//       readStream.write(generator(...params));
+//     }
+//   }
+// };
 
 module.exports = {
   saveFile,

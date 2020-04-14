@@ -18,7 +18,7 @@ const {
   randomInt, // random int (max, min]
 } = require('./helpers/randomizers');
 
-const dataGenerator = (primaryRecordCount) => {
+const dataGenerator = async (primaryRecordCount) => {
   const loopSize = 5000;
   
   const startTime = new Date();
@@ -32,60 +32,69 @@ const dataGenerator = (primaryRecordCount) => {
 
   
   for (; roomID < primaryRecordCount; loops += 1) {
-    const writeUser = userPipeGenerator(saveFile('users', loops));
-    const writeRoom = roomPipeGenerator(saveFile('rooms', loops));
-    const writeImage = imagePipeGenerator(saveFile('images', loops));
-    const writeDate = datePipeGenerator(saveFile('dates', loops));
-    const writeRules = rulesPipeGenerator(saveFile('rules', loops));
-    
+    // use below instead for User-only tests
+  // for (; userID < primaryRecordCount; loops += 1) {
+    const userWriteStream = saveFile('users', loops);
+    const roomWriteStream = saveFile('rooms', loops);
+    const imageWriteStream = saveFile('images', loops);
+    const dateWriteStream = saveFile('dates', loops);
+    const rulesWriteStream = saveFile('rules', loops);
+    const writeUser = userPipeGenerator(userWriteStream);
+    const writeRoom = roomPipeGenerator(roomWriteStream);
+    const writeImage = imagePipeGenerator(imageWriteStream);
+    const writeDate = datePipeGenerator(dateWriteStream);
+    const writeRules = rulesPipeGenerator(rulesWriteStream);
+    const data = [];
     for (let i = 0; i < loopSize; i += 1, userID += 1) {
-      writeUser(userID);
+      
+      data.push(writeUser(userID));
 
       if (Boolean(randomInt(2) === 0)) { //user is a host
         const roomsHosted = randomInt(9, 1);
         for (let j = 0; j < roomsHosted; j += 1, roomID += 1) {
           
-          writeRoom(roomID, userID);
+          data.push(writeRoom(roomID, userID));
           
           const yolkVerified = Boolean(randomInt(2) === 1);
           const imageCount = randomInt(5);
 
           for (let k = 0; k < imageCount; k += 1, imageID += 1) {
-            writeImage(imageID, roomID, yolkVerified);
+            data.push(writeImage(imageID, roomID, yolkVerified));
           }
 
           const basePrice = randomInt(300, 20);
-          writeRules(roomID, basePrice);
+          data.push(writeRules(roomID, basePrice));
           
           for (let k = 0; k < dateArray.length; k += 1) {
-            writeDate(roomID, dateArray[k], basePrice);
+            data.push(writeDate(roomID, dateArray[k], basePrice));
           }
         }
       }
     }
-    
+    await Promise.all(data);
     console.log(`Finished primary loop ${loops}: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
   }
   console.log(`Primary Records Done! Finished ${loops -1} loops: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
   
-  // generate reviews
-  // choose relative number of reviews here
+  // // generate reviews
+  // // choose relative number of reviews here
   const avgReviewsPerRoom = 5;
   // restart loop count for file naming purposes
   loops = 1;
 
   // generate at least (avg * rooms) reviews
-  while (reviewID < roomID * avgReviewsPerRoom) {
+  for (; reviewID < roomID * avgReviewsPerRoom; loops += 1) {
     // open file stream
-    const writeReview = reviewPipeGenerator(saveFile('reviews', loops));
+    const reviewWriteStream = saveFile('reviews', loops);
+    const writeReview = reviewPipeGenerator(reviewWriteStream);
+    const data = [];
     for (let i = 0; i < loopSize; i += 1, reviewID += 1) {
       const randomRoomID = randomInt(roomID + 1, 1);
       const randomGuest = randomInt(userID + 1, 1);
-      writeReview(reviewID, randomRoomID, randomGuest);
+      data.push(writeReview(reviewID, randomRoomID, randomGuest));
     }
-
+    await Promise.all(data);
     console.log(`Finished secondary loop ${loops}: generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
-    loops += 1;
   }
   console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
   console.log(`Final results: ${roomID - 1} rooms, ${userID -1} users, ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
