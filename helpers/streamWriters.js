@@ -1,3 +1,4 @@
+const fs = require('fs');
 const stringify = require('csv-stringify');
 
 //generators
@@ -8,6 +9,7 @@ const {
   generateDate,
   generateReview,
   generateReservationRules,
+  fileNameGenerator,
 } = require('./generators');
 
 //csv-stringify configuration objects
@@ -20,24 +22,34 @@ const {
   reviewColumns,
 } = require('./tableColumns');
 
-const writeStream = (generator, options) => {
-  return (stream) => {
-    return (...params) => {
-      stringify([generator(...params)], options, async (err, data) => {
-        if (err) {
-          return console.log(err);
-        }
-        if (!stream.write(data)) {
-          await new Promise (resolve => {
-            return stream.once('drain', resolve);
-          });
-        }
-      });
-    };
-  };
+
+module.exports.saveFile = (prefix, suffix) => {
+  return fs.createWriteStream(fileNameGenerator(prefix, suffix));
 };
 
-module.exports.writeUser = writeStream(generateUser, userColumns);
+
+const generatePromisifiedStringifier = (generator, options) => {
+  return (...params) => (
+    new Promise ((resolve, reject) => {
+      stringify([generator(...params)], options, (err, data) => (
+        err ? reject (err) : resolve (data)
+      ));
+    })
+  );
+};
+
+function writeStream(stream, stringifier) => {
+  return (params) => {
+
+  }
+}
+
+module.exports.writeUser = (params, stream) => {
+  generatePromisifiedStringifier(generateUser, userColumns)(params)
+  .then((data) => {if (!stream.write(data))});
+};
+
+
 /* module.exports.writeUser = (stream, userID) => {
   stringify([generateUser(userID)], userColumns, async (err, data) => {
     if (err) {
