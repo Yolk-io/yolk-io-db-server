@@ -15,11 +15,11 @@ const {
 
 //randomizers
 const {
-  randomInt,
+  randomInt, // random int (max, min]
 } = require('./helpers/randomizers');
 
 const dataGenerator = (primaryRecordCount) => {
-  const loopSize = 1;
+  const loopSize = 5000;
   
   const startTime = new Date();
   const dateArray = generateDateArray(); //next 93 days
@@ -31,89 +31,66 @@ const dataGenerator = (primaryRecordCount) => {
   let reviewID = 1;
 
   
-  while (/* roomID */userID < primaryRecordCount) {
+  for (; roomID < primaryRecordCount; loops += 1) {
+    const writeUser = userPipeGenerator(saveFile('users', loops));
+    const writeRoom = roomPipeGenerator(saveFile('rooms', loops));
+    const writeImage = imagePipeGenerator(saveFile('images', loops));
+    const writeDate = datePipeGenerator(saveFile('dates', loops));
+    const writeRules = rulesPipeGenerator(saveFile('rules', loops));
     
-  
-    const writeUsersStream = saveFile('users', loops);
-    const writeUser = userPipeGenerator(writeUsersStream);
-    /* 
-    const writeRoomsStream = fs.createWriteStream(fileNameGenerator('rooms', loops));
-    const writeImagesStream = fs.createWriteStream(fileNameGenerator('images', loops));
-    const writeRulesStream = fs.createWriteStream(fileNameGenerator('rules', loops));
-    const writeDatesStream = fs.createWriteStream(fileNameGenerator('dates', loops));
- */
     for (let i = 0; i < loopSize; i += 1, userID += 1) {
       writeUser(userID);
-/* 
-      if (Boolean(randomInt(2) === 0)) {//user is a host
+
+      if (Boolean(randomInt(2) === 0)) { //user is a host
         const roomsHosted = randomInt(9, 1);
-        for (let j = 0; j < roomsHosted; j += 1) {
+        for (let j = 0; j < roomsHosted; j += 1, roomID += 1) {
           
-          writeRoom(writeRoomsStream, roomID, userID);
+          writeRoom(roomID, userID);
           
           const yolkVerified = Boolean(randomInt(2) === 1);
-          const randomImages = randomInt(5);
+          const imageCount = randomInt(5);
 
-          for (let k = 0; k < randomImages; k += 1) {
-            writeImage(writeImagesStream, imageID, roomID, yolkVerified);
-            imageID += 1;
+          for (let k = 0; k < imageCount; k += 1, imageID += 1) {
+            writeImage(imageID, roomID, yolkVerified);
           }
 
           const basePrice = randomInt(300, 20);
-          writeRule(writeRulesStream, roomID, basePrice);
+          writeRules(roomID, basePrice);
           
           for (let k = 0; k < dateArray.length; k += 1) {
-            writeDate(writeDatesStream, roomID, dateArray[k], basePrice);
+            writeDate(roomID, dateArray[k], basePrice);
           }
-          roomID += 1;
         }
       }
-      */
-      // userID += 1;
     }
     
-    // writeUsersStream.end();
-    /* 
-    writeRoomsStream.end();
-    writeImagesStream.end();
-    writeRulesStream.end();
-    writeDatesStream.end();
-     */
-
-    
-
-    console.log(`Finished primary loop ${loops}: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`)
-    loops += 1;
+    console.log(`Finished primary loop ${loops}: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
   }
   console.log(`Primary Records Done! Finished ${loops -1} loops: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
- /*  
+  
   // generate reviews
   // choose relative number of reviews here
-  const avgReviewsPerRoom = 2;
+  const avgReviewsPerRoom = 5;
   // restart loop count for file naming purposes
   loops = 1;
 
   // generate at least (avg * rooms) reviews
   while (reviewID < roomID * avgReviewsPerRoom) {
     // open file stream
-    const writeReviewsStream = fs.createWriteStream(fileNameGenerator('reviews', loops));
-    for (let i = 0; i < loopSize; i += 1) {
+    const writeReview = reviewPipeGenerator(saveFile('reviews', loops));
+    for (let i = 0; i < loopSize; i += 1, reviewID += 1) {
       const randomRoomID = randomInt(roomID + 1, 1);
       const randomGuest = randomInt(userID + 1, 1);
-      //write review to CSV
-      writeReview(writeReviewsStream, reviewID, randomRoomID, randomGuest);
-      reviewID += 1;
+      writeReview(reviewID, randomRoomID, randomGuest);
     }
-    // close file stream
-    // writeReviewsStream.end();
 
     console.log(`Finished secondary loop ${loops}: generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
     loops += 1;
   }
-  console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`); 
-  */
+  console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
+  console.log(`Final results: ${roomID - 1} rooms, ${userID -1} users, ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
 };
 
-dataGenerator(5);
+dataGenerator(1000000);
 
 module.exports = dataGenerator;
