@@ -44,13 +44,11 @@ const dataGenerator = async (primaryRecordCount) => {
     const writeImage = imagePipeGenerator(imageWriteStream);
     const writeDate = datePipeGenerator(dateWriteStream);
     const writeRules = rulesPipeGenerator(rulesWriteStream); */
-    const data = [];
     for (let i = 0; i < loopSize; i += 1, userID += 1) {
-      const [userWriteBool, userWritePromise] = writeUser(userID);
+      const userWriteBool = writeUser(userID);
       if(!userWriteBool) {
         await new Promise((resolve) => userReadStream.once('drain', resolve));
       }
-      data.push(userWritePromise);
 
       /* if (Boolean(randomInt(2) === 0)) { //user is a host
         const roomsHosted = randomInt(9, 1);
@@ -74,7 +72,6 @@ const dataGenerator = async (primaryRecordCount) => {
         }
       } */
     }
-    // await Promise.all(data);
     console.log(`Finished primary loop ${loops}: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
   }
   console.log(`Primary Records Done! Finished ${loops -1} loops: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
