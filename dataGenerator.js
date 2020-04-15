@@ -18,6 +18,12 @@ const {
   randomInt, // random int (max, min]
 } = require('./helpers/randomizers');
 
+function promiseResolveOnStreamClose(stream) {
+  return new Promise ((resolve) => {
+    stream.on('close', () => {resolve('closed')});
+  });
+}
+
 const dataGenerator = async (primaryRecordCount) => {
   const loopSize = 5000;
   
@@ -35,24 +41,27 @@ const dataGenerator = async (primaryRecordCount) => {
     // use below instead for User-only tests
   // for (; userID < primaryRecordCount; loops += 1) {
     const userWriteStream = saveFile('users', loops);
-    const roomWriteStream = saveFile('rooms', loops);
-    const imageWriteStream = saveFile('images', loops);
-    const dateWriteStream = saveFile('dates', loops);
-    const rulesWriteStream = saveFile('rules', loops);
     const writeUser = userPipeGenerator(userWriteStream);
+
+    const roomWriteStream = saveFile('rooms', loops);
     const writeRoom = roomPipeGenerator(roomWriteStream);
+    
+    const imageWriteStream = saveFile('images', loops);
     const writeImage = imagePipeGenerator(imageWriteStream);
+
+    const dateWriteStream = saveFile('dates', loops);
     const writeDate = datePipeGenerator(dateWriteStream);
+    
+    const rulesWriteStream = saveFile('rules', loops);
     const writeRules = rulesPipeGenerator(rulesWriteStream);
-    const data = [];
+    
     for (let i = 0; i < loopSize; i += 1, userID += 1) {
-      
+      const data = [];
       data.push(writeUser(userID));
 
       if (Boolean(randomInt(2) === 0)) { //user is a host
         const roomsHosted = randomInt(9, 1);
         for (let j = 0; j < roomsHosted; j += 1, roomID += 1) {
-          
           data.push(writeRoom(roomID, userID));
           
           const yolkVerified = Boolean(randomInt(2) === 1);
@@ -70,21 +79,31 @@ const dataGenerator = async (primaryRecordCount) => {
           }
         }
       }
+      await Promise.all(data);
     }
-    await Promise.all(data);
+    userWriteStream.end();
+    roomWriteStream.end();
+    imageWriteStream.end();
+    dateWriteStream.end();
+    rulesWriteStream.end();
+
+    await Promise.all([
+      promiseResolveOnStreamClose(userWriteStream),
+      promiseResolveOnStreamClose(roomWriteStream),
+      promiseResolveOnStreamClose(imageWriteStream),
+      promiseResolveOnStreamClose(dateWriteStream),
+      promiseResolveOnStreamClose(rulesWriteStream),
+    ])
+
     console.log(`Finished primary loop ${loops}: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
   }
   console.log(`Primary Records Done! Finished ${loops -1} loops: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
   
-  // // generate reviews
-  // // choose relative number of reviews here
   const avgReviewsPerRoom = 5;
-  // restart loop count for file naming purposes
   loops = 1;
 
   // generate at least (avg * rooms) reviews
   for (; reviewID < roomID * avgReviewsPerRoom; loops += 1) {
-    // open file stream
     const reviewWriteStream = saveFile('reviews', loops);
     const writeReview = reviewPipeGenerator(reviewWriteStream);
     const data = [];
@@ -94,12 +113,14 @@ const dataGenerator = async (primaryRecordCount) => {
       data.push(writeReview(reviewID, randomRoomID, randomGuest));
     }
     await Promise.all(data);
+    reviewWriteStream.end();
+    await promiseResolveOnStreamClose(reviewWriteStream);
     console.log(`Finished secondary loop ${loops}: generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
   }
   console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
   console.log(`Final results: ${roomID - 1} rooms, ${userID -1} users, ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
 };
 
-dataGenerator(1000000);
+dataGenerator(10000000);
 
 module.exports = dataGenerator;
