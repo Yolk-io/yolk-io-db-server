@@ -11,7 +11,7 @@ CREATE TYPE city AS ENUM ('Baltimore', 'Seattle', 'New York', 'Boston', 'Portlan
 CREATE TABLE "rooms" (
   "id" SERIAL PRIMARY KEY,
   "host_id" int,
-  "home_name" varchar NOT NULL,
+  "room_name" varchar NOT NULL,
   "description" varchar(999),
   "type_of_place" place_type,
   "city" city
