@@ -19,7 +19,7 @@ const {
 } = require('./helpers/randomizers');
 
 const dataGenerator = async (primaryRecordCount) => {
-  const loopSize = 5000;
+  const loopSize = 100000;
   
   const startTime = new Date();
   const dateArray = generateDateArray(); //next 93 days
@@ -31,25 +31,28 @@ const dataGenerator = async (primaryRecordCount) => {
   let reviewID = 1;
 
   
-  for (; roomID < primaryRecordCount; loops += 1) {
+  // for (; roomID < primaryRecordCount; loops += 1) {
     // use below instead for User-only tests
-  // for (; userID < primaryRecordCount; loops += 1) {
+  for (; userID < primaryRecordCount; loops += 1) {
     const userWriteStream = saveFile('users', loops);
-    const roomWriteStream = saveFile('rooms', loops);
+/*     const roomWriteStream = saveFile('rooms', loops);
     const imageWriteStream = saveFile('images', loops);
     const dateWriteStream = saveFile('dates', loops);
-    const rulesWriteStream = saveFile('rules', loops);
-    const writeUser = userPipeGenerator(userWriteStream);
-    const writeRoom = roomPipeGenerator(roomWriteStream);
+    const rulesWriteStream = saveFile('rules', loops); */
+    const [userReadStream, writeUser] = userPipeGenerator(userWriteStream);
+/*     const writeRoom = roomPipeGenerator(roomWriteStream);
     const writeImage = imagePipeGenerator(imageWriteStream);
     const writeDate = datePipeGenerator(dateWriteStream);
-    const writeRules = rulesPipeGenerator(rulesWriteStream);
+    const writeRules = rulesPipeGenerator(rulesWriteStream); */
     const data = [];
     for (let i = 0; i < loopSize; i += 1, userID += 1) {
-      
-      data.push(writeUser(userID));
+      const [userWriteBool, userWritePromise] = writeUser(userID);
+      if(!userWriteBool) {
+        await new Promise((resolve) => userReadStream.once('drain', resolve));
+      }
+      data.push(userWritePromise);
 
-      if (Boolean(randomInt(2) === 0)) { //user is a host
+      /* if (Boolean(randomInt(2) === 0)) { //user is a host
         const roomsHosted = randomInt(9, 1);
         for (let j = 0; j < roomsHosted; j += 1, roomID += 1) {
           
@@ -69,16 +72,16 @@ const dataGenerator = async (primaryRecordCount) => {
             data.push(writeDate(roomID, dateArray[k], basePrice));
           }
         }
-      }
+      } */
     }
-    await Promise.all(data);
+    // await Promise.all(data);
     console.log(`Finished primary loop ${loops}: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
   }
   console.log(`Primary Records Done! Finished ${loops -1} loops: ${userID - 1} users, ${roomID - 1} rooms: ${new Date() - startTime} ms`);
   
   // // generate reviews
   // // choose relative number of reviews here
-  const avgReviewsPerRoom = 5;
+/*   const avgReviewsPerRoom = 5;
   // restart loop count for file naming purposes
   loops = 1;
 
@@ -96,10 +99,10 @@ const dataGenerator = async (primaryRecordCount) => {
     await Promise.all(data);
     console.log(`Finished secondary loop ${loops}: generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
   }
-  console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
+  console.log(`Secondary Records Done! Finished ${loops -1} loops and generated ${reviewID - 1} reviews: ${new Date() - startTime} ms`); */
   console.log(`Final results: ${roomID - 1} rooms, ${userID -1} users, ${reviewID - 1} reviews: ${new Date() - startTime} ms`);
 };
 
-dataGenerator(1000000);
+dataGenerator(10000000);
 
 module.exports = dataGenerator;

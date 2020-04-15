@@ -27,25 +27,28 @@ const saveFile = (prefix, suffix) => {
   return fs.createWriteStream(fileNameGenerator(prefix, suffix));
 };
 
-const streamWriterGenerator = (generator, options) => {
-  return (writeStream) => {
-    const readStream = stringify(options);
-    readStream.pipe(writeStream);
-    return (...params) => {
-      return new Promise ((resolve, reject) => readStream.write(generator(...params), resolve));
-    }
-  }
-};
-
+// working version
 // const streamWriterGenerator = (generator, options) => {
 //   return (writeStream) => {
 //     const readStream = stringify(options);
 //     readStream.pipe(writeStream);
 //     return (...params) => {
-//       readStream.write(generator(...params));
+//       return new Promise ((resolve, reject) => readStream.write(generator(...params), resolve));
 //     }
 //   }
 // };
+
+const streamWriterGenerator = (generator, options) => {
+  return (writeStream) => {
+    const readStream = stringify(options);
+    readStream.pipe(writeStream);
+    return [readStream, (...params) => {
+      output = [];
+      output.push(new Promise ((resolve, reject) => output.push(readStream.write(generator(...params)), resolve)));
+      return output;
+    }]
+  }
+};
 
 module.exports = {
   saveFile,
