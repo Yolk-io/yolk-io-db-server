@@ -37,16 +37,6 @@ const streamWriterGenerator = (generator, options) => {
   }
 };
 
-// const streamWriterGenerator = (generator, options) => {
-//   return (writeStream) => {
-//     const readStream = stringify(options);
-//     readStream.pipe(writeStream);
-//     return (...params) => {
-//       readStream.write(generator(...params));
-//     }
-//   }
-// };
-
 module.exports = {
   saveFile,
   userPipeGenerator: streamWriterGenerator(generateUser, userColumns),
