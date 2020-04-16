@@ -1,6 +1,6 @@
 CREATE TABLE "users" (
   "id" SERIAL PRIMARY KEY,
-  "username" varchar UNIQUE,
+  "username" varchar,
   "is_super_host" boolean,
   "profile_image_url" varchar(200)
 );
@@ -25,7 +25,7 @@ CREATE TABLE "images" (
   "yolk_verified" bool
 );
 
-CREATE TYPE rating AS ENUM (1, 2, 3, 4, 5);
+CREATE TYPE rating AS ENUM ('1', '2', '3', '4', '5');
 
 CREATE TABLE "room_reviews" (
   "id" SERIAL PRIMARY KEY,
